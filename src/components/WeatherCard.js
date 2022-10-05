@@ -5,15 +5,9 @@ import { day, night } from "../utils/constants";
 
 function WeatherCard(props) {
 
-  let background;
-  let timeOfDay;
-  let weatherCondition = String(props.weather).toLowerCase();
-
-  if (props.isDay === 1) {
-    timeOfDay = day;
-  } else {
-    timeOfDay = night;
-  }
+  let background = "";
+  const weatherCondition = String(props.weather).toLowerCase();
+  const timeOfDay = props.isDay === 1 ? day : night;
 
   // Set the background image based on weather condition
   if (weatherCondition.includes("cloud")) {
