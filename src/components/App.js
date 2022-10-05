@@ -9,23 +9,22 @@ import NewGarmentForm from './NewGarmentForm';
 import Footer from './Footer';
 import { defaultClothingItems, currentDate } from '../utils/constants';
 import ItemModal from './ItemModal';
-import WeatherApi, { weatherTemp } from '../utils/WeatherApi';
+import WeatherApi, { getWeatherTemperature } from '../utils/WeatherApi';
+
+const api = new WeatherApi();
 
 function App() {
-  const [temp, setTemperature] = useState();
-  const [weather, setWeather] = useState();
+  const [temperature, setTemperature] = useState("");
+  const [weather, setWeather] = useState("");
   const [location, setLocation] = useState("Kingston");
   const [isDay, setIsDay] = useState(1);
-
-  const api = new WeatherApi();
-
+  const [isNewGarmentModalOpen, setIsNewGarmentModalOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   useEffect(() => {
     api
       .getCurrentWeather("18.0, -76.8")
       .then((currentWeather) => {
-        console.log(weather);
-        console.log(currentWeather.current.condition.text);
         setWeather(currentWeather.current.condition.text);
         setLocation(`${currentWeather.location.name}`);
         setIsDay(currentWeather.current.is_day);
@@ -36,64 +35,92 @@ function App() {
       });
   }, []);
 
-  // Open Popup
-  function handlePopupOpen(name) {
-    const popup = document.querySelector(`.popup_type_${name}`);
-    popup.classList.add("popup_opened");
-    document.addEventListener("keydown", handleEscClose);
 
+  const useGlobalKeydownListener = (key, callback) => {
+    useEffect(() => {
+      const handleKeyDown = (evt) => {
+        if (evt.key === key) {
+          callback();
+        }
+      }
+
+      document.addEventListener("keydown", handleKeyDown);
+
+      return () => {
+        document.removeEventListener("keydown", handleKeyDown);
+      }
+    }, []);
   }
 
-  // Close popup on Esc
-  function handleEscClose(evt) {
-    if (evt.key === "Escape") {
-      document.querySelector(".popup_opened").classList.remove("popup_opened");
-      document.removeEventListener("keydown", handleEscClose);
-    }
+  useGlobalKeydownListener('Escape', closeModals);
+
+  const useOutsideClickListener = (tag, callback) => {
+    useEffect(() => {
+      const handleClick = (evt) => {
+        if (evt.target.classList.contains(`${tag}`)) {
+          callback();
+        }
+      }
+
+      document.addEventListener("mousedown", handleClick);
+
+      return () => {
+        document.removeEventListener("mousedown", handleClick);
+      }
+    }, []);
   }
 
-  // Close Popup
-  function handlePopupClose(evt) {
-    const popup = evt.target.closest(".popup");
-    console.dir(popup);
-    popup.classList.remove("popup_opened");
-    document.removeEventListener("keydown", handleEscClose);
+  useOutsideClickListener('popup', closeModals);
+  
+  function openNewGarmentModal() {
+    setIsNewGarmentModalOpen(true);
+  }
+
+  function openPreviewModal() {
+    setIsPreviewModalOpen(true);
   }
 
   // Handle ItemPopup open
   function handleItemPopupOpen(name, data) {
+    console.log(data);
     const itemPopup = document.querySelector(`.popup_type_${name}`);
-    itemPopup.classList.add("popup_opened");
-    itemPopup.querySelector(".popup__item-image").src = data.link;
-    itemPopup.querySelector(".popup__item-title").textContent = data.title;
-    itemPopup.querySelector(".popup__item-description").textContent = `Weather: ${data.description}`;
-    itemPopup.addEventListener("mousedown", handlePopupClose);
-    document.addEventListener("keydown", handleEscClose);
+    const image = itemPopup.querySelector(".popup__item-image");
+    const title = itemPopup.querySelector(".popup__item-title");
+    const description = itemPopup.querySelector(".popup__item-description");
+    image.src = data.link;
+    title.textContent = data.title;
+    description.textContent = `Weather: ${data.description}`;
+    openPreviewModal();
+  }
+
+  function closeModals() {
+    setIsNewGarmentModalOpen(false);
+    setIsPreviewModalOpen(false);
   }
 
   return (
     <div className='App'>
       <Header
         username="Norman Wright"
-        openPopup={handlePopupOpen}
-        popupName="add"
+        name="add"
         currentDate={currentDate}
         currentLocation={location}
+        openPopup={openNewGarmentModal}
+        onClose={closeModals}
       />
       <Main 
-        temp={temp} 
+        temp={temperature} 
       >
         <WeatherCard
           id="weather"
           key="weatherCard"
-          temp={temp}
+          temp={temperature}
           weather={weather}
           isDay={isDay}
         />
         <ItemCard
-          key="itemCard"
           clothingList={defaultClothingItems}
-          currentWeather={weatherTemp(temp)}
+          currentWeather={getWeatherTemperature(temperature)}
           openPopup={handleItemPopupOpen}
         />
       </Main>
@@ -102,13 +129,15 @@ function App() {
         id="addGarment"
         name="add"
         buttonText="Add garment"
-        onClose={handlePopupClose}
+        isOpen={isNewGarmentModalOpen}
+        onClose={closeModals}
       >
         <NewGarmentForm />
       </ModalWithForm>
       <ItemModal
         name="item"
-        onClose={handlePopupClose}
+        isOpen={isPreviewModalOpen}
+        onClose={closeModals}
       />
       <Footer />
     </div>
