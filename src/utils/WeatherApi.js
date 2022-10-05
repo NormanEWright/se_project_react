@@ -1,7 +1,7 @@
 import React from 'react';
 import { apiKey } from './constants';
 
-export function weatherTemp(temperature) {
+export function getWeatherTemperature(temperature) {
   if (temperature >= 86) {
     return 'hot';
   } else if (temperature >= 66 && temperature <= 85) {
@@ -12,18 +12,18 @@ export function weatherTemp(temperature) {
 }
 
 class WeatherApi extends React.Component {
-  constructor(props) {
-    super(props);
+  _processResponse = (res) => {
+    if (res.ok) {
+      return res.json();
+    }
+    return Promise.reject(`Error: ${res.status}`);
   }
 
   async getCurrentWeather(parsedLocation) {
     const res = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${parsedLocation}&days=1`);
-    if (res.ok) {
-      return res.json();
-    } else {
-      return Promise.reject(`Error: ${res.status}`);
-    }
+    return this._processResponse(res);
   }
 }
+
 
 export default WeatherApi;
