@@ -15,9 +15,7 @@ function Header(props) {
       <div className="header__right-side">
         <button 
           className="header__add-button"
-          onClick={() => {
-            props.openPopup(props.name);
-          }}
+          onClick={props.openPopup}
         >
           + Add clothes</button>
         <p className="header__user-name">{props.username}</p>
