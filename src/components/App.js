@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../blocks/App.css';
 import Header from './Header';
 import Main from './Main';
@@ -10,6 +10,8 @@ import Footer from './Footer';
 import { defaultClothingItems, currentDate } from '../utils/constants';
 import ItemModal from './ItemModal';
 import WeatherApi, { getWeatherTemperature } from '../utils/WeatherApi';
+import { useGlobalKeydownListener } from '../hooks/useGlobalKeydownListener';
+import { useOutsideClickListener } from '../hooks/useOutsideClickListener';
 
 const api = new WeatherApi();
 
@@ -20,10 +22,11 @@ function App() {
   const [isDay, setIsDay] = useState(1);
   const [isNewGarmentModalOpen, setIsNewGarmentModalOpen] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [itemData, setItemData] = useState({link: '', title: '', descriptions: ''});
 
   useEffect(() => {
     api
-      .getCurrentWeather("18.0, -76.8")
+      .getCurrentWeather("18.0179, -76.8099")
       .then((currentWeather) => {
         setWeather(currentWeather.current.condition.text);
         setLocation(`${currentWeather.location.name}`);
@@ -35,68 +38,22 @@ function App() {
       });
   }, []);
 
-
-  const useGlobalKeydownListener = (key, callback) => {
-    useEffect(() => {
-      const handleKeyDown = (evt) => {
-        if (evt.key === key) {
-          callback();
-        }
-      }
-
-      document.addEventListener("keydown", handleKeyDown);
-
-      return () => {
-        document.removeEventListener("keydown", handleKeyDown);
-      }
-    }, []);
-  }
-
-  useGlobalKeydownListener('Escape', closeModals);
-
-  const useOutsideClickListener = (tag, callback) => {
-    useEffect(() => {
-      const handleClick = (evt) => {
-        if (evt.target.classList.contains(`${tag}`)) {
-          callback();
-        }
-      }
-
-      document.addEventListener("mousedown", handleClick);
-
-      return () => {
-        document.removeEventListener("mousedown", handleClick);
-      }
-    }, []);
-  }
-
-  useOutsideClickListener('popup', closeModals);
-  
   function openNewGarmentModal() {
     setIsNewGarmentModalOpen(true);
   }
 
-  function openPreviewModal() {
+  function openPreviewModal(name, data) {
     setIsPreviewModalOpen(true);
+    setItemData(data);
   }
 
-  // Handle ItemPopup open
-  function handleItemPopupOpen(name, data) {
-    console.log(data);
-    const itemPopup = document.querySelector(`.popup_type_${name}`);
-    const image = itemPopup.querySelector(".popup__item-image");
-    const title = itemPopup.querySelector(".popup__item-title");
-    const description = itemPopup.querySelector(".popup__item-description");
-    image.src = data.link;
-    title.textContent = data.title;
-    description.textContent = `Weather: ${data.description}`;
-    openPreviewModal();
-  }
-
-  function closeModals() {
+  const closeModals = useCallback(() => {
     setIsNewGarmentModalOpen(false);
     setIsPreviewModalOpen(false);
-  }
+  })
+
+  useGlobalKeydownListener('Escape', closeModals);
+  useOutsideClickListener('popup', closeModals);
 
   return (
     <div className='App'>
@@ -108,9 +65,7 @@ function App() {
         openPopup={openNewGarmentModal}
         onClose={closeModals}
       />
-      <Main 
-        temp={temperature} 
-      >
+      <Main temp={temperature} >
         <WeatherCard
           id="weather"
           key="weatherCard"
@@ -118,11 +73,16 @@ function App() {
           weather={weather}
           isDay={isDay}
         />
-        <ItemCard
-          clothingList={defaultClothingItems}
-          currentWeather={getWeatherTemperature(temperature)}
-          openPopup={handleItemPopupOpen}
-        />
+          <ul className='card__list'>
+            {
+              defaultClothingItems.map(item => <ItemCard
+                key={item._id}
+                data={item}
+                openPopup={openPreviewModal}
+                currentWeather={getWeatherTemperature(temperature)}
+              />)
+            }
+          </ul>
       </Main>
       <ModalWithForm
         title="New garment"
@@ -138,6 +98,7 @@ function App() {
         name="item"
         isOpen={isPreviewModalOpen}
         onClose={closeModals}
+        data={itemData}
       />
       <Footer />
     </div>
