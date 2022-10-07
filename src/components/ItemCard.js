@@ -9,7 +9,7 @@ function ItemCard({ data, openPopup, currentWeather }) {
       description: data.weather,
     });
   }
-  console.log(`Current weather is: ${currentWeather}`);
+  
   if (data.weather === currentWeather) {
     return (
       <li
