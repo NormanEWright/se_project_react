@@ -50,7 +50,7 @@ function App() {
   const closeModals = useCallback(() => {
     setIsNewGarmentModalOpen(false);
     setIsPreviewModalOpen(false);
-  })
+  }, [])
 
   useGlobalKeydownListener('Escape', closeModals);
   useOutsideClickListener('popup', closeModals);
